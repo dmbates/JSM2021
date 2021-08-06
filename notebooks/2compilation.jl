@@ -10,6 +10,9 @@ using BenchmarkTools, CairoMakie, LoopVectorization, MethodAnalysis
 # ╔═╡ c5a55de6-fe87-4e26-976e-b211a7c9ee55
 using PlutoUI, ANSIColoredPrinters, DualNumbers, Random
 
+# ╔═╡ c06434e0-0ded-46ba-a0cd-a186e2087583
+html"<button onclick=present()>Presentation mode</button>"
+
 # ╔═╡ 28cbb4dd-c5f1-4c39-b25a-6b974124a5fc
 md"""
 # Far too much detail on a logistic function in Julia
@@ -284,7 +287,7 @@ md"""
 - Show benchmarking of scalar, broadcast and mutating methods.
 - Code like that shown below is actually used in GLM.jl and MixedModels.jl when fitting GLMs or GLMMs.  Contrast with what is done in [lme4](https://github.com/lme4/lme4/blob/master/src/glmFamily.cpp#L121) (which ends up calling code from [libRmath](https://github.com/wch/r-source/blob/trunk/src/nmath/plogis.c#L38)).
 
-
+## Initial definition of a Julia method
 The *inverse link function* for the logit link is the *logistic*, $μ = g^{-1}(η) = \frac{1}{1+e^{-η}}$.  One way to write this in Julia is
 """
 
@@ -300,6 +303,9 @@ md"""
 - We call these *implementation methods*, in contrast to *method instances* shown below.  They are the code or the implementation of the idea of *logistic* for some types of arguments.
 - In this case there is only one argument, which has not been given a type, hence it gets the default type `Any`.
 """
+
+# ╔═╡ 4bc26078-1f81-4dca-81f3-3c8cac585d63
+md"## Calling this method"
 
 # ╔═╡ 26bff24b-3205-4020-9e1c-315b6823730f
 methods(logistic1)  # returns the "implementation" methods - only one at this point
@@ -327,6 +333,7 @@ logistic1(Dual(1.3, 1))  # Dual numbers, used in Automatic Differentiation
 
 # ╔═╡ e88eaf23-709e-41ac-8cff-89255a18bcfc
 md"""
+## Method instances
 Although we have only one implementation method, each of these calls with a different number type as its argument creates its own `MethodInstance`.
 """
 
@@ -336,6 +343,8 @@ methodinstances(logistic1)
 # ╔═╡ 257fcc63-a75e-4787-8eaa-6d05f8966181
 md"""
 - Each `MethodInstance` is compiled separately to assembler code
+
+## Compilation steps
 - The steps are
     + *lower* the code to a simpler form, sometimes called [single static assignment](https://en.wikipedia.org/wiki/Static_single_assignment_form) - essentially this converts expressions and control flow to baby steps.
     + perform *type inference* to infer the type of the value at each of these baby steps.
@@ -345,6 +354,8 @@ md"""
 - We can examine the result of each stage using functions `code_lowered`, `code_typed` or `code_warntype`, `code_llvm` and `code_native`.
     + the arguments are the generic name and a `tuple` of argument types to the generic
     + in practice, we often use macros with similar names to which we can pass a sample call and have it infer the types
+
+## Code lowering
 """
 
 # ╔═╡ f69b1ad4-01a2-4de8-9fcd-1e77ce8e5e46
@@ -353,13 +364,26 @@ code_lowered(logistic1, (Float64,))  # function call form of code_lowered
 # ╔═╡ a386c48f-0217-434d-9f7c-bbb786afcb8f
 @code_lowered logistic1(1.3)         # macro call which infers the types of args
 
+# ╔═╡ d4bb0948-0f90-4fc9-9032-be54223001fb
+md"""
+- Calling the macro (`@code_lowered`) is just *syntactic sugar* that, instead of requiring the user to determine and list all the types in the call, takes a sample call and creates the appropriate function call
+## Type inference"
+- Could use `@code_typed` but we generally use `@code_warntype` which shows the inferred types and highlights any cases where inference has failed.
+"""
+
 # ╔═╡ 46b439fe-8af6-43df-95be-968b4319a49f
 # use @code_warntype (no trailing underscore) in the REPL
 @code_warntype_ logistic1(1.3)
 
+# ╔═╡ 15d16e3b-db42-481a-a5aa-62810a9939c6
+md"## Create LLVM code"
+
 # ╔═╡ d6f8cfa3-8e97-446f-aacf-232fa2f8d673
 #@code_llvm in the REPL
 @code_llvm_ logistic1(1.3)
+
+# ╔═╡ 92f4b917-2dc8-45f7-9e2f-03bb61af80ae
+md"## Finally, the assembler code"
 
 # ╔═╡ eac0800b-b985-4f86-ae0f-924e0f62f7ce
 #@code_native in the REPL
@@ -367,6 +391,7 @@ code_lowered(logistic1, (Float64,))  # function call form of code_lowered
 
 # ╔═╡ d1c33f7a-4970-41b8-a6dc-077c015cd4b6
 md"""
+## Each MethodInstance creates different code
 - For another data type the code_lowered will look essentially the same but the others will change.
 - In practice, we don't usually examine this output, except for `@code_warntype` when something seems to be unusually slow, which can be because type inference has failed.
 """
@@ -376,6 +401,9 @@ md"""
 
 # ╔═╡ ce63eb1f-be0a-43c3-93de-313aca45a155
 @code_llvm_ logistic1(1.3f0)
+
+# ╔═╡ c5a413cb-e015-460d-bc51-870de4b92cb9
+md"## Sometimes very different code"
 
 # ╔═╡ 7d99a317-d5e6-46b7-a9ba-16d3817a19f9
 @code_warntype_ logistic1(Dual(1.3, 1.0))
@@ -396,6 +424,7 @@ logistic(η) = inv(one(η) + exp(-η))
 
 # ╔═╡ 3f12a642-b6fd-4ffd-a726-78f92f35d472
 md"""
+## Verifying the results are the same as before
 We can verify our previous results with this new definition
 """
 
@@ -407,6 +436,7 @@ logistic(1.3) == logistic1(1.3)
 
 # ╔═╡ fb40ddf8-616a-4175-bc75-83e85b2f9ad8
 md"""
+## Using dot-broadcasting
 - We can try other types as before but it gets tedious writing all these comparisons
 - It would be better to iterate over a collection of values of different types. However, we can't store these in a vector or `Array` because elements of an `Array` must be the same type.
 - In Julia a *Tuple* is an ordered collection of possibly heterogeneous elements
@@ -428,6 +458,9 @@ first(vals)
 # ╔═╡ 411c5fab-2b63-456c-ab5f-5c331dfb337f
 vals[3]
 
+# ╔═╡ b0904413-c835-45b0-95c2-d6e28c1998a0
+md"## Broadcasting the comparison"
+
 # ╔═╡ 8afdceb1-d99e-4212-9192-ad533edad354
 begin
 	inputs = (1.3, 1.3f0, big"1.3", Dual(1.3, 1.0), 1.3+0.0im)
@@ -442,8 +475,9 @@ all(@. logistic(inputs) == logistic1(inputs))
 
 # ╔═╡ 7fccb6fa-3a96-4480-a229-1a4c4d477f9f
 md"""
-- We could even apply `logistic` to a square matrix, because `exp(A)` produces the matrix exponential. 
-- Whether that would be particularly meaningful is not certain.
+## logistic of a Matrix?
+- We could even apply `logistic` to a square matrix, because `exp(A)` produces the matrix exponential. (Think of the matrix exponential as defined by the Taylor series $I + \frac{A}{1!} + \frac{A^2}{2!} + \frac{A^3}{3!} + \dots$)
+- Whether the logistic of a matrix would be particularly meaningful is not certain.
 """
 
 # ╔═╡ 004dd11e-5698-4470-8b23-3eeef2218d25
@@ -455,11 +489,15 @@ end
 # ╔═╡ 8b6fab32-5c31-4a22-94d3-4d9a2c6e0415
 logistic(A)
 
+# ╔═╡ 0a1a7ebc-dd6b-4159-a986-92441417fe35
+md"## Doesn't work with the old definition"
+
 # ╔═╡ 6fa75bb1-d949-408a-991f-716d4c29b640
 logistic1(A)   # fails at the addition step in the denominator
 
 # ╔═╡ d9e16371-995e-4fa0-b758-edba9241b538
 md"""
+## For number types the llvm code is as before
 - The llvm code from, say `logistic(::Float64)` will be the same as for `logistic1(::Float64)`.  It just skips one step of promoting `1` to `Float64` for addition.
 - At the llvm stage of compilation all the trivial function calls have been inlined.
 """
@@ -497,6 +535,7 @@ md"""
 
 # ╔═╡ 4cb90e1a-ee5c-409a-b39d-96423605dd75
 md"""
+## Time spent in GC
 - Sometimes there can be a huge range in the timings and in the fraction of time spent in GC.
 - We should compare a single evaluation, which we do by picking an η value in the middle of the range.
 """
@@ -507,6 +546,8 @@ md"""
 # ╔═╡ 27059732-fb53-40e3-b9a5-056d3b8c17d4
 md"""
 - This is actually rather slow in part because of the cautious way `StepRange` values are calculated.
+
+## Collect the sequence as a vector
 - We will collect the values in a vector `ηv` and use that instead
 """
 
@@ -516,8 +557,8 @@ begin
 	@benchmark logistic.($ηv)
 end
 
-# ╔═╡ e0b91e52-23cd-4eb8-addf-c62af1e38286
-(typeof(η), typeof(ηv))
+# ╔═╡ ed138a71-e751-4c16-8c8d-732bec1c8fa0
+md"## Evaluating at a vector element is faster"
 
 # ╔═╡ 7924d72d-c8d6-46b3-81f4-f8245f0c34bf
 @benchmark logistic($ηv[321])
@@ -525,6 +566,7 @@ end
 # ╔═╡ 4ae3b20f-7a1c-4729-a854-941e8df088b8
 md"""
 - There are 601 values and, on my computer, about 5 ns per value so a total of 3 μs for the vector is reasonable.
+## Mutating functions
 - We still have the allocation overhead, even though we already have a μ vector allocated.
     + In Julia functions can *mutate* their arguments and overwrite, say, the values of an `Array` or similar structure.
     + By convention, a `!` is appended to the name of such functions and the argument(s) to be modified is/are the first in the argument list.
@@ -532,9 +574,12 @@ md"""
 """
 
 # ╔═╡ 19237137-1937-495f-a28c-7ca716b81f95
-function logistic1!(y::AbstractArray{T}, x::AbstractArray{T}) where {T}
-	return @. y = inv(one(T) + exp(-x))
+function logistic1!(μ::AbstractArray{T}, η::AbstractArray{T}) where {T}
+	return @. μ = inv(one(T) + exp(-η))
 end
+
+# ╔═╡ 517fff09-055b-4635-8808-3a74022aec62
+md"## Benchmark the mutating version"
 
 # ╔═╡ bcf5d9cc-8dc4-4591-b64b-67e35e0a7045
 @benchmark logistic1!($μ, $ηv)
@@ -542,6 +587,7 @@ end
 # ╔═╡ defbf223-8452-49ae-a8bd-76ea74bb10b7
 md"""
 - Not a huge time saving at the low end or the mean or the median but no GC and hence much greater consistency in times.
+## But wait, there's more
 - It happens that this form can be further enhanced using a type of parallelization called *single instruction, multiple data* (SIMD), available on modern CPUs.
 - The [LoopVectorization package](https://github.com/JuliaSIMD/LoopVectorization.jl) by Chris Elrod has a lot of people excited about these methods.
 - In cases to which it applies, you just wrap a loop (explicit or implicit) in `@turbo`.
@@ -557,6 +603,7 @@ end
 
 # ╔═╡ 489b22a1-e4c0-4e3a-a2c9-4c474521c221
 md"""
+## The turbo version
 - This is over 10 times faster than the version without `@turbo` on my computer
 - In fact it is close to 16 times faster, which is about what is expected because it is operating on 16 Float32 values at a time (the processor supports avx512).
 """
@@ -568,6 +615,7 @@ end
 
 # ╔═╡ e24a79ae-c7f1-4ac5-99ac-e34072beb164
 md"""
+## Similar results for Float64
 - when fitting a GLM, η and μ would usually be double precision floating point vectors
 - for comparison with the `Float32` results we keep the same length (601) of η and μ
 """
@@ -594,6 +642,9 @@ md"""
 
 # ╔═╡ 8ef8dac4-a2bf-4d46-8818-3c68eed48c10
 Resource("https://github.com/dmbates/JSM2021/blob/main/notebooks/assets/5hs27j.jpg?raw=true")
+
+# ╔═╡ a3caff0a-76a0-4b1d-b2a9-863977ed720c
+md"See also, [Jan Vitek's presentation](https://www.youtube.com/watch?v=VdD0nHbcyk4) in the WhyR series."
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1728,6 +1779,7 @@ version = "3.5.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╟─c06434e0-0ded-46ba-a0cd-a186e2087583
 # ╟─28cbb4dd-c5f1-4c39-b25a-6b974124a5fc
 # ╠═6c3f0006-ed5f-11eb-1d6a-97e055036aaf
 # ╠═c5a55de6-fe87-4e26-976e-b211a7c9ee55
@@ -1739,6 +1791,7 @@ version = "3.5.0+0"
 # ╟─eb2cb49d-de84-4021-88b0-9915ed4c3e41
 # ╠═0f96b7b1-b9fd-48c4-a418-c066e815be1c
 # ╟─67f68fff-cb3b-4ab2-89d8-cd323dd6545f
+# ╟─4bc26078-1f81-4dca-81f3-3c8cac585d63
 # ╠═26bff24b-3205-4020-9e1c-315b6823730f
 # ╟─2e88ea1d-b055-4167-910d-f57b329e861a
 # ╠═35007adb-1867-4118-8a4c-e4bffa8b837a
@@ -1752,12 +1805,16 @@ version = "3.5.0+0"
 # ╟─257fcc63-a75e-4787-8eaa-6d05f8966181
 # ╠═f69b1ad4-01a2-4de8-9fcd-1e77ce8e5e46
 # ╠═a386c48f-0217-434d-9f7c-bbb786afcb8f
+# ╟─d4bb0948-0f90-4fc9-9032-be54223001fb
 # ╠═46b439fe-8af6-43df-95be-968b4319a49f
+# ╟─15d16e3b-db42-481a-a5aa-62810a9939c6
 # ╠═d6f8cfa3-8e97-446f-aacf-232fa2f8d673
+# ╟─92f4b917-2dc8-45f7-9e2f-03bb61af80ae
 # ╠═eac0800b-b985-4f86-ae0f-924e0f62f7ce
 # ╟─d1c33f7a-4970-41b8-a6dc-077c015cd4b6
 # ╠═7c7453b5-4186-4df3-abb7-20cf2afb6161
 # ╠═ce63eb1f-be0a-43c3-93de-313aca45a155
+# ╟─c5a413cb-e015-460d-bc51-870de4b92cb9
 # ╠═7d99a317-d5e6-46b7-a9ba-16d3817a19f9
 # ╠═13246aed-c0fb-4c42-ae98-012a07f93fc8
 # ╟─3dc537e1-1b00-476a-8ca5-a602c73cc44e
@@ -1770,12 +1827,14 @@ version = "3.5.0+0"
 # ╟─44744591-ee45-4ba9-9aac-c5f8bcb67a63
 # ╠═5eb416ae-d43c-4034-b2c7-ee0959be4ae1
 # ╠═411c5fab-2b63-456c-ab5f-5c331dfb337f
+# ╟─b0904413-c835-45b0-95c2-d6e28c1998a0
 # ╠═8afdceb1-d99e-4212-9192-ad533edad354
 # ╟─b435de57-0a26-4a87-881a-1016f79e1b3b
 # ╠═3dd434f8-5425-4368-9d85-13ccc5c19d44
 # ╟─7fccb6fa-3a96-4480-a229-1a4c4d477f9f
 # ╠═004dd11e-5698-4470-8b23-3eeef2218d25
 # ╠═8b6fab32-5c31-4a22-94d3-4d9a2c6e0415
+# ╟─0a1a7ebc-dd6b-4159-a986-92441417fe35
 # ╠═6fa75bb1-d949-408a-991f-716d4c29b640
 # ╟─d9e16371-995e-4fa0-b758-edba9241b538
 # ╠═3c4298d0-af51-460e-bd39-8eb91c1cb053
@@ -1788,10 +1847,11 @@ version = "3.5.0+0"
 # ╠═dfc3aba6-9224-4a6b-82da-7e0765ecaeb8
 # ╟─27059732-fb53-40e3-b9a5-056d3b8c17d4
 # ╠═02a8237d-0e2a-4973-8d1f-69312f25bf0b
-# ╠═e0b91e52-23cd-4eb8-addf-c62af1e38286
+# ╟─ed138a71-e751-4c16-8c8d-732bec1c8fa0
 # ╠═7924d72d-c8d6-46b3-81f4-f8245f0c34bf
 # ╟─4ae3b20f-7a1c-4729-a854-941e8df088b8
 # ╠═19237137-1937-495f-a28c-7ca716b81f95
+# ╟─517fff09-055b-4635-8808-3a74022aec62
 # ╠═bcf5d9cc-8dc4-4591-b64b-67e35e0a7045
 # ╟─defbf223-8452-49ae-a8bd-76ea74bb10b7
 # ╠═6fe48e39-ee1d-477f-b753-775cb6524d62
@@ -1802,5 +1862,6 @@ version = "3.5.0+0"
 # ╠═30f6f5f5-cd81-4802-bbf4-fea630ca1dec
 # ╟─9f4443ca-2d3a-4e63-be26-8549485913af
 # ╟─8ef8dac4-a2bf-4d46-8818-3c68eed48c10
+# ╟─a3caff0a-76a0-4b1d-b2a9-863977ed720c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

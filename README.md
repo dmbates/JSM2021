@@ -13,7 +13,9 @@ Resources:
     Pluto.run()
     ```
     * At this point you are switched to a browser.  Use the `Open File` box to select the notebook file.
-    * These Pluto notebooks have a `Present` button that makes subsections and sections appear as slides.  You can skip it if you are just reading them.
+    * These Pluto notebooks have a `Presentation Mode` button that makes subsections and sections appear as slides.  You can skip it if you are just reading them.
+- A notebook such as `1intro.jl` has a companion file `1intro.jl.html` which can be viewed in a browser. Although the `html` file itself is not interactive, there is a button on the top left that provides instructions (similar to those above) for downloading and installing Julia and Pluto and running the notebook.
+- One section of the talk, on using the `RCall` package, will be presented as a Jupyter notebook to be able to display plots from R.
 - A good source for information on Julia packages is https://juliahub.com/ui/Packages
 - The chapter [*Why Julia*](https://storopoli.io/Bayesian-Julia/pages/1_why_Julia/) in *Bayesian Statistics using Julia and Turing* provides a good narrative introduction to important features of Julia for Statistics and Data Science.
 - [*Julius Krumbiegel's blog*](https://jkrumbiegel.com) provides short, accessible articles on some of the great data science tools he develops.

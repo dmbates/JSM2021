@@ -1,0 +1,7 @@
+Jan Vitek: The take-away is that R is slow for fairly good reasons, and while the speed may not affect you, it prevents you from writing new algorithms that are potentially more compute intensive.
+
+Talk on "R Melts Brains" at WhyR, September 2020
+
+23:58 - A compiler wants to know things ahead of time. 
+
+26:30 - Lazy evaluation of arguments is not used much but it has performance and compilation implications
