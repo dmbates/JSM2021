@@ -367,7 +367,7 @@ code_lowered(logistic1, (Float64,))  # function call form of code_lowered
 # ╔═╡ d4bb0948-0f90-4fc9-9032-be54223001fb
 md"""
 - Calling the macro (`@code_lowered`) is just *syntactic sugar* that, instead of requiring the user to determine and list all the types in the call, takes a sample call and creates the appropriate function call
-## Type inference"
+## Type inference
 - Could use `@code_typed` but we generally use `@code_warntype` which shows the inferred types and highlights any cases where inference has failed.
 """
 
