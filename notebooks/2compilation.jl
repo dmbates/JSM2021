@@ -637,7 +637,7 @@ md"""
 - it is not uncommon to write *mutating* methods that overwrite the contents of one or more arguments.
 - there are many tools to examine the compilation process if you wish.  Most of the time it is not necessary to do so.
 - there are also tools to benchmark, profile, etc. evaluation of expressions, to create test suites and check the test coverage, ...
-- the ability to compile method instances is a result of designing the language from the ground up to be able to do so. As Sir Jamie says:
+- the ability to compile method instances is a result of designing the language from the ground up to be able to do so. As Boromir said:
 """
 
 # ╔═╡ 8ef8dac4-a2bf-4d46-8818-3c68eed48c10

@@ -18,8 +18,8 @@ md"""
     - How do I get started?
 2. A deep dive into a shallow function - how does compilation work?
 3. Motivating example -- `MixedModels.jl` compared to R's `lme4`
-4. Some recommended packages for Statistics and Data Science  
-5. `RCall.jl` and `PyCall.jl`: to allow you to build on your current skills
+4. `RCall.jl` and `PyCall.jl`: to allow you to build on your current skills
+5. Some recommended packages for Statistics and Data Science  
 """
 
 # ╔═╡ 7e8e3903-a76d-4310-b5df-8508fdd7dba3
